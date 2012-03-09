@@ -1,0 +1,79 @@
+#!/bin/bash
+#
+# spaces2tabs
+#
+# by Jeffrey Morgan
+# http://usabilityetc.com/
+#
+# Replace every set of consecutive spaces with one tab on every
+# line in every matching file in every sub-directory. An example use
+# is when lines have been indented with spaces and you want them
+# indented with tabs instead.
+#
+# Use:
+#   spaces2tabs [directory] [file pattern] [number of spaces]
+#
+#   directory        - the directory in which to start searching for files
+#   file pattern     - how to match files. Example: *.java
+#   number of spaces - the number of consecutive spaces to replace with a tab
+#
+# Example:
+#
+#   spaces2tabs src *.java 4
+#
+
+# Get the name of this script
+scriptName=$(basename $0)
+
+# Create the name of a temporary file in which to store each processed file
+# using the name of this script and its process number ($$)
+tempFile="/tmp/$scriptName.$$.tmp"
+
+# Exit if three command-line arguments were not supplied
+if [ $# -ne 3 ]; then
+	echo "$scriptName [directory] [file pattern] [number of spaces]"
+	exit 1
+fi
+
+# Get the directory from the first command-line argument
+if [ -d $1 ]; then
+	directory=$1
+else
+	# Exit if the first command-line argument is not a directory
+	echo "$scriptName: Please supply a directory"
+	exit 1
+fi
+
+# Get the file pattern from the second command-line argument
+filePattern=$2
+
+# Get the number of consecutive spaces to replace with a tab
+# from the third command-line argument (must be 1 or more)
+if [[ $3 =~ ^[1-9][0-9]*$ ]]; then
+	spaces=$3
+else
+	# Exit if the third argument is not an integer greater than one
+	echo "$scriptName: The number of consecutive spaces must be 1 or more"
+	exit 1
+fi
+
+# The regexp pattern that matches $spaces consecutive spaces
+# Example: the pattern will be _\{3\} for three spaces
+# (where _ represents the space character)
+spacesPattern=" \{$spaces\}"
+
+# Compile a list of every file matching $filePattern by
+# descending $directory and all its sub-directories
+list=$(find $directory -type f -name $filePattern )
+
+# Iterate over each file in the list
+for file in $list; do
+
+	# Process every line of $file and replace every set of consecutive
+	# spaces with one tab and store the processed file in $tempFile
+	sed "s/${spacesPattern}/	/g" $file > $tempFile
+
+	# Replace the original $file with the processed temporary file $tempFile
+	mv $tempFile $file
+
+done #end for loop
